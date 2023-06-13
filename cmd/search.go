@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +11,6 @@ var searchCmd = &cobra.Command{
 	Long: `Search various sources for articles.
 
 A subcommand is required in order to search a specific database.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("search called without a subcommand")
-	},
 }
 
 func init() {
