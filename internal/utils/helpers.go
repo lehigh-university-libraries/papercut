@@ -28,10 +28,5 @@ func FetchEmails(url string) ([]string, error) {
 	r := regexp.MustCompile(emailRegex)
 	emails := r.FindAllString(string(body), -1)
 
-	// Print the extracted email addresses
-	for _, email := range emails {
-		queries = append(queries, email)
-	}
-
-	return queries, nil
+	return emails, nil
 }
