@@ -121,9 +121,9 @@ func init() {
 	searchCmd.AddCommand(arxivCmd)
 
 	arxivCmd.Flags().StringP("url", "u", "https://export.arxiv.org/api/query", "The arXiv API url")
-	arxivCmd.Flags().StringVarP(&query, "query", "q", "", "The arXiv API url")
-	arxivCmd.Flags().StringVarP(&ids, "ids", "i", "", "The arXiv API url")
+	arxivCmd.Flags().StringVarP(&query, "query", "q", "", "The arXiv API search query to perform")
+	arxivCmd.Flags().StringVarP(&ids, "ids", "i", "", "A comma separated list of arXiv IDs")
 	arxivCmd.Flags().IntVarP(&start, "start", "s", 0, "The offset")
 	arxivCmd.Flags().IntVarP(&results, "results", "r", 10, "The number of results to return in a response")
-	arxivCmd.Flags().String("directory-listing", "", "URL to a web page listing faculty")
+	arxivCmd.Flags().String("directory-listing", "", "URL to a web page listing faculty email addresses")
 }

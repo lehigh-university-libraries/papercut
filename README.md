@@ -21,7 +21,46 @@ Then put the binary in a directory that is in your `$PATH`
 
 ## Usage
 
-TODO
+### Search
+```
+$ papercut search --help
+Search various sources for articles.
+
+A subcommand is required in order to search a specific database.
+
+Usage:
+  papercut search [flags]
+  papercut search [command]
+
+Available Commands:
+  arxiv       Search arXiv for articles
+
+Flags:
+  -h, --help   help for search
+
+Use "papercut search [command] --help" for more information about a command.
+```
+
+#### arXiv
+
+```
+$ papercut search arxiv --help
+Search arXiv for articles.
+
+Thank you to arXiv for use of its open access interoperability.
+
+Usage:
+  papercut search arxiv [flags]
+
+Flags:
+      --directory-listing string   URL to a web page listing faculty email addresses
+  -h, --help                       help for arxiv
+  -i, --ids string                 A comma separated list of arXiv IDs
+  -q, --query string               The arXiv API search query to perform
+  -r, --results int                The number of results to return in a response (default 10)
+  -s, --start int                  The offset
+  -u, --url string                 The arXiv API url (default "https://export.arxiv.org/api/query")
+```
 
 ## Updating
 
