@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"encoding/csv"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -81,41 +78,39 @@ Thank you to arXiv for use of its open access interoperability.`,
 
 				log.Printf("Accessing %s\n", apiURL)
 
-				resp, err := http.Get(apiURL)
+				result, err := arxiv.GetResults(apiURL)
 				if err != nil {
-					fmt.Println("Error requesting XML data:", err)
-					return
+					log.Fatal(err)
 				}
-				defer resp.Body.Close()
+				for true {
+					for _, e := range result.Entries {
+						wr.Write([]string{
+							e.ID,
+							e.Published.String(),
+							e.Updated.String(),
+							e.Title,
+							e.DOI,
+							e.PDF,
+							query,
+						})
+						wr.Flush()
+					}
 
-				body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					fmt.Println("Error reading response body:", err)
-					return
+					log.Println("Pausing between requests. arXiv requests a three second delay between API requests...")
+					time.Sleep(3 * time.Second)
+					next := result.StartIndex + result.ItemsPerPage
+					if result.TotalResults > next {
+						params.Set("start", strconv.Itoa(next))
+						apiURL := fmt.Sprintf("%s?%s", url, params.Encode())
+						log.Printf("Accessing %s\n", apiURL)
+						result, err = arxiv.GetResults(apiURL)
+						if err != nil {
+							log.Fatal(err)
+						}
+					} else {
+						break
+					}
 				}
-
-				var result arxiv.Feed
-				err = xml.Unmarshal(body, &result)
-				if err != nil {
-					fmt.Println("Error:", err)
-					return
-				}
-
-				for _, e := range result.Entries {
-					wr.Write([]string{
-						e.ID,
-						e.Published.String(),
-						e.Updated.String(),
-						e.Title,
-						e.DOI,
-						e.PDF,
-						query,
-					})
-					wr.Flush()
-				}
-
-				log.Println("Pausing between requests. arXiv requests a three second delay between API requests...")
-				time.Sleep(3 * time.Second)
 			}
 
 		},
