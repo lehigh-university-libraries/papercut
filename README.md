@@ -29,7 +29,6 @@ Search various sources for articles.
 A subcommand is required in order to search a specific database.
 
 Usage:
-  papercut search [flags]
   papercut search [command]
 
 Available Commands:
