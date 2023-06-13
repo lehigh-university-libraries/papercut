@@ -11,15 +11,16 @@ type Entry struct {
 	ID              string     `xml:"id"`
 	Updated         time.Time  `xml:"updated"`
 	Published       time.Time  `xml:"published"`
-	Title           string     `xml:"title",chardata`
+	Title           string     `xml:"title"`
 	Summary         string     `xml:"summary"`
 	Authors         []Author   `xml:"author"`
 	DOI             string     `xml:"http://arxiv.org/schemas/atom doi"`
-	RelatedLinks    []Link     `xml:"link"`
+	Links           []Link     `xml:"link"`
 	Comment         string     `xml:"http://arxiv.org/schemas/atom comment"`
 	JournalRef      string     `xml:"http://arxiv.org/schemas/atom journal_ref"`
 	PrimaryCategory Category   `xml:"http://arxiv.org/schemas/atom primary_category"`
 	Categories      []Category `xml:"category"`
+	PDF             string
 }
 
 // Implement the UnmarshalXML interface to cleanup title fields
@@ -34,6 +35,12 @@ func (e *Entry) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 	*e = Entry(alias)
 	e.Title = cleanString(e.Title)
+
+	for _, link := range e.Links {
+		if link.Title == "pdf" {
+			e.PDF = link.Href
+		}
+	}
 
 	return nil
 }
