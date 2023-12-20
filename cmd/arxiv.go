@@ -59,7 +59,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 			wr := csv.NewWriter(os.Stdout)
 
 			// header
-			wr.Write([]string{"id", "published", "updated", "title", "summary", "doi", "pdf", "primary_category", "category", "query"})
+			wr.Write([]string{"id", "published", "updated", "title", "summary", "authors", "doi", "pdf", "primary_category", "category", "query"})
 
 			for _, query := range queries {
 
