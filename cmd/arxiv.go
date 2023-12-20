@@ -3,10 +3,14 @@ package cmd
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/lehigh-university-libraries/papercut/internal/utils"
@@ -55,7 +59,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 			wr := csv.NewWriter(os.Stdout)
 
 			// header
-			wr.Write([]string{"id", "published", "updated", "title", "doi", "pdf", "query"})
+			wr.Write([]string{"id", "published", "updated", "title", "summary", "doi", "pdf", "primary_category", "category", "query"})
 
 			for _, query := range queries {
 
@@ -84,16 +88,70 @@ Thank you to arXiv for use of its open access interoperability.`,
 				}
 				for true {
 					for _, e := range result.Entries {
+						var authors = []string{}
+						for _, a := range e.Authors {
+							authors = append(authors, a.Name)
+						}
+						var categories = []string{}
+						for _, c := range e.Categories {
+							categories = append(categories, c.Term)
+						}
 						wr.Write([]string{
 							e.ID,
 							e.Published.String(),
 							e.Updated.String(),
 							e.Title,
+							e.Summary,
+							strings.Join(authors, ";"),
 							e.DOI,
 							e.PDF,
+							e.PrimaryCategory.Term,
+							strings.Join(categories, ";"),
 							query,
 						})
 						wr.Flush()
+
+						if e.PDF != "" {
+							downloadDirectory := "papers"
+							if err := os.MkdirAll(downloadDirectory, 0755); err != nil {
+								fmt.Println("Error creating directory:", err)
+								return
+							}
+
+							_, filename := filepath.Split(e.PDF)
+							// Ensure the filename has a .pdf extension
+							if !strings.HasSuffix(filename, ".pdf") {
+								filename = fmt.Sprintf("%s.pdf", filename)
+							}
+							filePath := filepath.Join(downloadDirectory, filename)
+
+							if _, err := os.Stat(filePath); os.IsNotExist(err) {
+
+								file, err := os.Create(filePath)
+								if err != nil {
+									fmt.Println("Error creating file:", err)
+									return
+								}
+								defer file.Close()
+
+								response, err := http.Get(e.PDF)
+								if err != nil {
+									fmt.Println("Error downloading PDF:", err)
+									return
+								}
+								defer response.Body.Close()
+
+								if response.StatusCode != http.StatusOK {
+									fmt.Printf("Error: HTTP status %d\n", response.StatusCode)
+									return
+								}
+								_, err = io.Copy(file, response.Body)
+								if err != nil {
+									fmt.Println("Error copying PDF content to file:", err)
+									return
+								}
+							}
+						}
 					}
 
 					log.Println("Pausing between requests. arXiv requests a three second delay between API requests...")
