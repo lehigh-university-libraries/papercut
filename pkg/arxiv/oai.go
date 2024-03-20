@@ -35,7 +35,9 @@ type OaiAuthor struct {
 }
 
 func GetOaiRecord(id string) map[string]string {
-	values := map[string]string{}
+	values := map[string]string{
+		"field_rights": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+	}
 	log.Println("Fetching", id)
 	url := fmt.Sprintf("https://export.arxiv.org/oai2?verb=GetRecord&identifier=oai:arXiv.org:%s&metadataPrefix=arXiv", id)
 	resp, err := http.Get(url)

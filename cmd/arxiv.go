@@ -116,7 +116,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 				if err != nil {
 					log.Fatal(err)
 				}
-				pattern := `/abs/(\d+\.\d+)(?:v\d+)?$`
+				pattern := `/abs/([0-9a-z]+(\/|\.)\d+)(?:v\d+)?$`
 				re := regexp.MustCompile(pattern)
 
 				for true {
@@ -126,6 +126,9 @@ Thank you to arXiv for use of its open access interoperability.`,
 						time.Sleep(3 * time.Second)
 
 						matches := re.FindStringSubmatch(e.ID)
+						if len(matches) <= 1 {
+							log.Fatal(e.ID)
+						}
 						oai := arxiv.GetOaiRecord(matches[1])
 						if e.JournalRef != "" {
 							e.JournalRef = fmt.Sprintf(`{"title": "%s"}`, e.JournalRef)
