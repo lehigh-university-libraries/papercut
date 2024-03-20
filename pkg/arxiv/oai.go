@@ -58,8 +58,9 @@ func GetOaiRecord(id string) map[string]string {
 		fmt.Println("Error:", err)
 		return nil
 	}
-
-	values["field_rights"] = oaiResponse.Record.License
+	if oaiResponse.Record.License != "" {
+		values["field_rights"] = oaiResponse.Record.License
+	}
 
 	var authors []string
 	for _, author := range oaiResponse.Record.Authors.Authors {
