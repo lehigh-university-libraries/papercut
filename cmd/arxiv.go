@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -115,17 +116,19 @@ Thank you to arXiv for use of its open access interoperability.`,
 				if err != nil {
 					log.Fatal(err)
 				}
+				pattern := `/abs/(\d+\.\d+)(?:v\d+)?$`
+				re := regexp.MustCompile(pattern)
+
 				for true {
 					for _, e := range result.Entries {
-						if e.License == "" {
-							e.License = "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html"
-						}
+
+						log.Println("Pausing between requests. arXiv requests a three second delay between API requests...")
+						time.Sleep(3 * time.Second)
+
+						matches := re.FindStringSubmatch(e.ID)
+						oai := arxiv.GetOaiRecord(matches[1])
 						if e.JournalRef != "" {
 							e.JournalRef = fmt.Sprintf(`{"title": "%s"}`, e.JournalRef)
-						}
-						var authors = []string{}
-						for _, a := range e.Authors {
-							authors = append(authors, a.Name)
 						}
 						var categories = []string{}
 						for _, c := range e.Categories {
@@ -171,10 +174,10 @@ Thank you to arXiv for use of its open access interoperability.`,
 							utils.TrimToMaxLen(e.Title, 255),
 							e.Title,
 							e.Summary,
-							strings.Join(authors, "|"),
+							oai["field_linked_agent"],
 							strings.Join(identifiers, "|"),
 							e.JournalRef,
-							e.License,
+							oai["field_rights"],
 							strings.Join(categories, "|"),
 							e.PDF,
 							query,

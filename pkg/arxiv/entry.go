@@ -20,7 +20,6 @@ type Entry struct {
 	JournalRef      string     `xml:"http://arxiv.org/schemas/atom journal_ref"`
 	PrimaryCategory Category   `xml:"http://arxiv.org/schemas/atom primary_category"`
 	Categories      []Category `xml:"category"`
-	License         string     `xml:"license"`
 	PDF             string
 }
 
