@@ -120,6 +120,9 @@ Thank you to arXiv for use of its open access interoperability.`,
 						if e.License == "" {
 							e.License = "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html"
 						}
+						if e.JournalRef != "" {
+							e.JournalRef = fmt.Sprintf(`{"title": "%s"}`, e.JournalRef)
+						}
 						var authors = []string{}
 						for _, a := range e.Authors {
 							authors = append(authors, a.Name)
