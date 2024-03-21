@@ -68,7 +68,20 @@ Thank you to arXiv for use of its open access interoperability.`,
 			if query != "" {
 				queries = append(queries, query)
 			}
-
+			if ids != "" {
+				s := strings.Split(",", ids)
+				id_list := []string{}
+				for _, id := range s {
+					id_list = append(id_list, id)
+					if len(id_list) == results {
+						queries = append(queries, strings.Join(id_list, ","))
+						id_list = []string{}
+					}
+				}
+				if len(id_list) > 0 {
+					queries = append(queries, strings.Join(id_list, ","))
+				}
+			}
 			if len(queries) == 0 && ids == "" {
 				log.Fatal("query or ids required.")
 			}
@@ -94,11 +107,11 @@ Thank you to arXiv for use of its open access interoperability.`,
 			for _, query := range queries {
 
 				params := url.Values{}
-				if query != "" {
-					params.Set("search_query", query)
-				}
 				if ids != "" {
 					params.Set("id_list", ids)
+
+				} else {
+					params.Set("search_query", query)
 				}
 
 				params.Set("start", strconv.Itoa(start))
@@ -116,7 +129,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 				if err != nil {
 					log.Fatal(err)
 				}
-				pattern := `/abs/([0-9a-z]+(\/|\.)\d+)(?:v\d+)?$`
+				pattern := `/abs/([0-9a-z\-]+(\/|\.)\d+)(?:v\d+)?$`
 				re := regexp.MustCompile(pattern)
 
 				for true {
