@@ -4,7 +4,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -34,12 +33,7 @@ type OaiAuthor struct {
 	ForeName string `xml:"forenames"`
 }
 
-func GetOaiRecord(id string) map[string]string {
-	values := map[string]string{
-		"field_rights": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
-	}
-	log.Println("Fetching", id)
-	url := fmt.Sprintf("https://export.arxiv.org/oai2?verb=GetRecord&identifier=oai:arXiv.org:%s&metadataPrefix=arXiv", id)
+func GetOaiRecord(url string) map[string]string {
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -52,8 +46,17 @@ func GetOaiRecord(id string) map[string]string {
 		fmt.Println("Error:", err)
 		return nil
 	}
+
+	return ParseOaiResponse(body)
+}
+
+func ParseOaiResponse(body []byte) map[string]string {
+	values := map[string]string{
+		"field_rights": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html",
+	}
+
 	var oaiResponse OAIResponse
-	err = xml.Unmarshal(body, &oaiResponse)
+	err := xml.Unmarshal(body, &oaiResponse)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil

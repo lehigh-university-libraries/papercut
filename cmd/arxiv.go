@@ -131,7 +131,10 @@ Thank you to arXiv for use of its open access interoperability.`,
 						if len(matches) <= 1 {
 							log.Fatal(e.ID)
 						}
-						oai := arxiv.GetOaiRecord(matches[1])
+
+						log.Println("Fetching", matches[1])
+						url := fmt.Sprintf("https://export.arxiv.org/oai2?verb=GetRecord&identifier=oai:arXiv.org:%s&metadataPrefix=arXiv", matches[1])
+						oai := arxiv.GetOaiRecord(url)
 						if e.JournalRef != "" {
 							e.JournalRef = fmt.Sprintf(`{"title": "%s"}`, e.JournalRef)
 						}
