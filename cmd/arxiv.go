@@ -67,28 +67,17 @@ Thank you to arXiv for use of its open access interoperability.`,
 			}
 			if query != "" {
 				queries = append(queries, query)
+			} else if ids != "" {
+				queries = append(queries, ids)
 			}
-			if ids != "" {
-				s := strings.Split(",", ids)
-				id_list := []string{}
-				for _, id := range s {
-					id_list = append(id_list, id)
-					if len(id_list) == results {
-						queries = append(queries, strings.Join(id_list, ","))
-						id_list = []string{}
-					}
-				}
-				if len(id_list) > 0 {
-					queries = append(queries, strings.Join(id_list, ","))
-				}
-			}
-			if len(queries) == 0 && ids == "" {
-				log.Fatal("query or ids required.")
+
+			if len(queries) == 0 {
+				log.Fatal("--query or --ids required.")
 			}
 
 			wr := csv.NewWriter(os.Stdout)
 
-			// header
+			// CSV header
 			wr.Write([]string{
 				"id",
 				"field_edtf_date_issued",
