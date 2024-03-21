@@ -5,20 +5,20 @@
 class Papercut < Formula
   desc ""
   homepage "https://github.com/lehigh-university-libraries/homebrew-papercut"
-  version "0.1.4"
+  version "0.2.1"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/v0.1.4/homebrew-papercut_Darwin_arm64.tar.gz"
-      sha256 "2b9eb197578d1cd7b41c13a698369ce94a48b80268575f5bb3f73a92694fe780"
+      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/0.2.1/homebrew-papercut_Darwin_arm64.tar.gz"
+      sha256 "028a156586c6459cdcbfb711a8d3c33369038910a6c5499068f6daf7a84a436f"
 
       def install
         bin.install "papercut"
       end
     end
     if Hardware::CPU.intel?
-      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/v0.1.4/homebrew-papercut_Darwin_x86_64.tar.gz"
-      sha256 "279759fb2efe65172da5098db90ee3a4e2dd1a376f47bf2b96331de082f41db2"
+      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/0.2.1/homebrew-papercut_Darwin_x86_64.tar.gz"
+      sha256 "c2c7903b1cd93881d246f590094975ae2f0fbe8e13f337e25dbd3eb0ee45f24a"
 
       def install
         bin.install "papercut"
@@ -28,16 +28,16 @@ class Papercut < Formula
 
   on_linux do
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/v0.1.4/homebrew-papercut_Linux_arm64.tar.gz"
-      sha256 "499250baf19b38b965369a36da1d8a2888e58440ce4d429f460d1238f5bc4d19"
+      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/0.2.1/homebrew-papercut_Linux_arm64.tar.gz"
+      sha256 "61f9ed521cf64aae7e3a49688a69644d30dd22478291a438fd509d0955ec8fb8"
 
       def install
         bin.install "papercut"
       end
     end
     if Hardware::CPU.intel?
-      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/v0.1.4/homebrew-papercut_Linux_x86_64.tar.gz"
-      sha256 "006dc1c47638b4bc4f5cb5f22af7e78de9289b6a7eeb647490c62c106cb902cf"
+      url "https://github.com/lehigh-university-libraries/homebrew-papercut/releases/download/0.2.1/homebrew-papercut_Linux_x86_64.tar.gz"
+      sha256 "b45174bb56597704e84422ba6bc23172834bf155146999205e00fcf767ca6036"
 
       def install
         bin.install "papercut"
