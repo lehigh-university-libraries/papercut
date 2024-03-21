@@ -78,7 +78,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 			wr := csv.NewWriter(os.Stdout)
 
 			// CSV header
-			wr.Write([]string{
+			err = wr.Write([]string{
 				"id",
 				"field_edtf_date_issued",
 				"title",
@@ -92,6 +92,9 @@ Thank you to arXiv for use of its open access interoperability.`,
 				"file",
 				"arXiv search query",
 			})
+			if err != nil {
+				log.Fatalf("Unable to write to CSV: %v", err)
+			}
 			categoryNames := arxiv.GetCategoryLabels()
 			for _, query := range queries {
 
@@ -121,7 +124,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 				pattern := `/abs/([0-9a-z\-]+(\/|\.)\d+)(?:v\d+)?$`
 				re := regexp.MustCompile(pattern)
 
-				for true {
+				for {
 					for _, e := range result.Entries {
 
 						log.Println("Pausing between requests. arXiv requests a three second delay between API requests...")
@@ -176,7 +179,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 							doi := fmt.Sprintf(`{"attr0":"doi","value":"%s"}`, e.DOI)
 							identifiers = append(identifiers, doi)
 						}
-						wr.Write([]string{
+						err = wr.Write([]string{
 							e.ID,
 							strings.Split(e.Published.String(), " ")[0],
 							utils.TrimToMaxLen(e.Title, 255),
@@ -190,6 +193,9 @@ Thank you to arXiv for use of its open access interoperability.`,
 							e.PDF,
 							query,
 						})
+						if err != nil {
+							log.Fatalf("Unable to write to CSV: %v", err)
+						}
 						wr.Flush()
 
 						if e.PDF != "" {
