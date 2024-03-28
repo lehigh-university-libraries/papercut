@@ -1,7 +1,6 @@
 package doi
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,8 +89,7 @@ type Article struct {
 	//	Relation            interface{}   `json:"relation"`
 }
 
-func GetResults(url string) (Article, error) {
-	var result Article
+func GetObject(url, acceptContentType string) ([]byte, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -101,31 +99,24 @@ func GetResults(url string) (Article, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
-		return result, err
+		return nil, err
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", acceptContentType)
 
 	resp, err := client.Do(req)
-
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return result, err
-	}
-
-	return result, nil
+	return body, nil
 }
 
 func JoinDate(d DateParts) string {
