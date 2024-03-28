@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"unicode/utf8"
 )
@@ -33,16 +35,29 @@ func FetchEmails(url string) ([]string, error) {
 }
 
 func TrimToMaxLen(s string, maxLen int) string {
-	// Check if the string length exceeds the maximum length
 	if utf8.RuneCountInString(s) > maxLen {
-		// Convert the string to a slice of runes
 		runes := []rune(s)
-
-		// Truncate the slice to the maximum length
 		runes = runes[:maxLen]
-
-		// Convert the slice of runes back to a string
 		return string(runes)
 	}
+
 	return s
+}
+
+func MkTmpDir(d string) (string, error) {
+	tmpDir := os.TempDir()
+	dirPath := filepath.Join(tmpDir, d)
+	_, err := os.Stat(dirPath)
+	if err == nil {
+		return dirPath, nil
+	}
+
+	err = os.MkdirAll(dirPath, 0755)
+	if err != nil {
+		if !os.IsExist(err) {
+			return "", err
+		}
+	}
+
+	return dirPath, nil
 }
