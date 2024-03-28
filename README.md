@@ -61,6 +61,43 @@ Flags:
   -u, --url string                 The arXiv API url (default "https://export.arxiv.org/api/query")
 ```
 
+
+### Get
+```
+$ papercut get --help
+Fetch PDFs and/or metadata for articles.
+
+A subcommand is required in order to fetch the article from a specific source.
+
+Usage:
+  papercut get [command]
+
+Available Commands:
+  doi         Get DOI metadata and PDF
+
+Flags:
+  -h, --help   help for get
+
+Use "papercut get [command] --help" for more information about a command.
+```
+
+#### DOI
+
+Download the metadata and PDFs given a file with one DOI per line.
+
+```
+$ papercut get doi --help
+Get DOI metadata and PDF
+
+Usage:
+  papercut get doi [flags]
+
+Flags:
+  -f, --file string   path to file containing one DOI per line
+  -h, --help          help for doi
+  -u, --url string    The DOI API url (default "https://dx.doi.org")
+```
+
 ## Updating
 
 ### Homebrew
