@@ -111,6 +111,10 @@ func GetObject(url, acceptContentType string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode > 299 {
+		return nil, fmt.Errorf("%s returned a non-200 status code: %d", url, resp.StatusCode)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -144,8 +148,8 @@ func JoinDate(d DateParts) string {
 	}
 	parsedTime, err := time.Parse(sourcePattern, dateString)
 	if err != nil {
-		fmt.Println("Error parsing date:", err)
-		return dateString
+		return "invalid date"
 	}
+
 	return parsedTime.Format(targetPattern)
 }
