@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,7 +38,10 @@ func TestFetchEmails(t *testing.T) {
 			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == tc.mockURL {
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(tc.mockResponseBody))
+					_, err := w.Write([]byte(tc.mockResponseBody))
+					if err != nil {
+						log.Fatal(err)
+					}
 				} else {
 					w.WriteHeader(http.StatusNotFound)
 				}

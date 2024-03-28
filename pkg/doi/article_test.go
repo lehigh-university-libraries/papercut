@@ -2,6 +2,7 @@ package doi
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -97,13 +98,19 @@ func TestGetObject(t *testing.T) {
 		if r.URL.Path == "/test1" {
 			w.Header().Set("Content-Type", "text/plain")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Test response 1"))
+			_, err := w.Write([]byte("Test response 1"))
+			if err != nil {
+				log.Fatal(err)
+			}
 		} else if r.URL.Path == "/test2" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 
 			// Write the article JSON to the response
-			w.Write(articleJSON)
+			_, err := w.Write(articleJSON)
+			if err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
