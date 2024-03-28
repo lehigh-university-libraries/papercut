@@ -48,8 +48,11 @@ var (
 				"title",
 				"field_full_title",
 				"field_abstract",
+				"field_model",
 				"field_linked_agent",
 				"field_identifier",
+				"field_related_item",
+				"field_extent",
 				"field_language",
 				"field_rights",
 				"field_subject",
@@ -90,6 +93,19 @@ var (
 					identifiers = append(identifiers, fmt.Sprintf(`{"attr0":"issn","value":"%s"}`, i))
 				}
 
+				relatedItem := []string{}
+				if doiObject.Volume != "" {
+					relatedItem = append(relatedItem, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Volume))
+				}
+				if doiObject.Issue != "" {
+					relatedItem = append(relatedItem, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Issue))
+				}
+
+				extent := ""
+				if doiObject.Page != "" {
+					extent = fmt.Sprintf(`{"attr0": "page", "number": "%s"}`, doiObject.Page)
+				}
+
 				var pdfUrl string
 				pdf := ""
 				for _, l := range doiObject.Link {
@@ -125,17 +141,25 @@ var (
 						if err != nil {
 							log.Println("Error deleting file:", err)
 						}
-						pdf = ""
+						pdf = pdfUrl
 					}
+				}
+
+				fullTitle := ""
+				if len(doiObject.Title) > 255 {
+					fullTitle = doiObject.Title
 				}
 				err = wr.Write([]string{
 					line,
 					doi.JoinDate(doiObject.Issued),
 					utils.TrimToMaxLen(doiObject.Title, 255),
-					doiObject.Title,
+					fullTitle,
 					doiObject.Abstract,
+					"Digital Document",
 					strings.Join(linkedAgent, "|"),
 					strings.Join(identifiers, "|"),
+					strings.Join(relatedItem, "|"),
+					extent,
 					doiObject.Language,
 					"",
 					strings.Join(doiObject.Subject, "|"),
