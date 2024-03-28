@@ -1,6 +1,6 @@
 # Papercut CLI
 
-Command line utility to help fetch papers from various sources.
+Command line utility to help fetch scholarly articles from various sources.
 
 ## Install
 
