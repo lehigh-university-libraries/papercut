@@ -51,6 +51,7 @@ var (
 				"field_model",
 				"field_linked_agent",
 				"field_identifier",
+				"field_part_detail",
 				"field_related_item",
 				"field_extent",
 				"field_language",
@@ -93,35 +94,41 @@ var (
 					identifiers = append(identifiers, fmt.Sprintf(`{"attr0":"issn","value":"%s"}`, i))
 				}
 
-				relatedItem := []string{}
+				partDetail := []string{}
 				if doiObject.Volume != "" {
-					relatedItem = append(relatedItem, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Volume))
+					partDetail = append(partDetail, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Volume))
 				}
 				if doiObject.Issue != "" {
-					relatedItem = append(relatedItem, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Issue))
+					partDetail = append(partDetail, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Issue))
 				}
 
+				relatedItem := []string{}
+				if doiObject.ContainerTitle != "" {
+					relatedItem = append(relatedItem, fmt.Sprintf(`{"title": "%s"}`, doiObject.ContainerTitle))
+				}
 				extent := ""
 				if doiObject.Page != "" {
 					extent = fmt.Sprintf(`{"attr0": "page", "number": "%s"}`, doiObject.Page)
 				}
 
-				var pdfUrl string
+				pdfUrl := ""
 				pdf := ""
 				for _, l := range doiObject.Link {
 					if l.ContentType == "application/pdf" || strings.Contains(strings.ToLower(l.URL), "pdf") {
 						pdfUrl = l.URL
+
 					}
 				}
 				if pdfUrl == "" {
 					d = filepath.Join(dirPath, "doi.html")
 					result = getResult(d, url, line, "text/html")
-					pattern := `<meta\s+name="citation_pdf_url"\s+content="([^"]+)"\s*>`
+					pattern := `<meta name="citation_pdf_url" content="([^"]+)".*>`
 					re := regexp.MustCompile(pattern)
 					matches := re.FindAllSubmatch(result, -1)
 					var pdfURLs []string
 					for _, match := range matches {
 						if len(match) >= 2 {
+							log.Println(string(match[1]))
 							pdfURLs = append(pdfURLs, string(match[1]))
 						}
 					}
@@ -158,6 +165,7 @@ var (
 					"Digital Document",
 					strings.Join(linkedAgent, "|"),
 					strings.Join(identifiers, "|"),
+					strings.Join(partDetail, "|"),
 					strings.Join(relatedItem, "|"),
 					extent,
 					doiObject.Language,
