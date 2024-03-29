@@ -72,7 +72,7 @@ func DownloadPdf(url, filePath string) error {
 	}
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-
+		return fmt.Errorf("OK")
 		file, err := os.Create(filePath)
 		if err != nil {
 			fmt.Println("Error creating file:", err)

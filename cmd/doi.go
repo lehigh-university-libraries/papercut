@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,14 +16,15 @@ import (
 
 	"github.com/lehigh-university-libraries/papercut/internal/utils"
 	"github.com/lehigh-university-libraries/papercut/pkg/doi"
+	"github.com/lehigh-university-libraries/papercut/pkg/romeo"
 	"github.com/spf13/cobra"
 )
 
 var (
 	// used for flags.
-	filePath string
-
-	doiCmd = &cobra.Command{
+	filePath    string
+	romeoApiKey = os.Getenv("SHERPA_ROMEO_API_KEY")
+	doiCmd      = &cobra.Command{
 		Use:   "doi",
 		Short: "Get DOI metadata and PDF",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -92,6 +94,37 @@ var (
 				}
 				for _, i := range doiObject.ISSN {
 					identifiers = append(identifiers, fmt.Sprintf(`{"attr0":"issn","value":"%s"}`, i))
+					d, err = utils.MkTmpDir("issns")
+					if err != nil {
+						continue
+					}
+					d = filepath.Join(d, i)
+					publicationId := checkCachedFile(d)
+					id := string(publicationId)
+					if publicationId == nil {
+						id = romeo.GetIdFromIssn(i)
+						if id != "" {
+							writeCachedFile(d, id)
+						}
+					}
+					if id == "" {
+						continue
+					}
+					filter := fmt.Sprintf("[[\"id\",\"equals\",\"%s\"]]", id)
+					romeUrl := fmt.Sprintf("https://v2.sherpa.ac.uk/cgi/retrieve?item-type=publication&format=Json&limit=10&offset=0&order=-id&filter=%s&api-key=%s", neturl.QueryEscape(filter), romeoApiKey)
+					d, _ = utils.MkTmpDir(filepath.Join("issns", "ids"))
+					d = filepath.Join(d, id)
+					publication := checkCachedFile(d)
+					if publicationId == nil {
+						publication = romeo.GetPublication(romeUrl)
+						if publication != nil {
+							writeCachedFile(d, string(publication))
+						}
+					}
+					if publication == nil {
+						continue
+					}
+
 				}
 
 				partDetail := []string{}
@@ -116,7 +149,6 @@ var (
 				for _, l := range doiObject.Link {
 					if l.ContentType == "application/pdf" || strings.Contains(strings.ToLower(l.URL), "pdf") {
 						pdfUrl = l.URL
-
 					}
 				}
 				if pdfUrl == "" {
@@ -197,19 +229,14 @@ func init() {
 func getResult(d, url, line, acceptContentType string) []byte {
 	var err error
 
-	// see if we can just get the cached file
-	if _, err := os.Stat(d); err == nil {
-		content, err := os.ReadFile(d)
-		if err != nil {
-			fmt.Println("Error reading cached file:", err)
-		} else {
-			var a doi.Affiliation
-			err = json.Unmarshal(content, &a)
-			if err == nil || acceptContentType == "text/html" {
-				return content
-			}
-			log.Println("Error unmarshalling cached file:", err)
+	content := checkCachedFile(d)
+	if content != nil {
+		var a doi.Affiliation
+		err = json.Unmarshal(content, &a)
+		if err == nil || acceptContentType == "text/html" {
+			return content
 		}
+		log.Println("Error unmarshalling cached file:", err)
 	}
 
 	apiURL := fmt.Sprintf("%s/%s", url, line)
@@ -220,17 +247,33 @@ func getResult(d, url, line, acceptContentType string) []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cacheFile, err := os.Create(d)
+	writeCachedFile(d, string(doiObject))
+	return doiObject
+}
+
+func checkCachedFile(d string) []byte {
+	// see if we can just get the cached file
+	if _, err := os.Stat(d); err == nil {
+		content, err := os.ReadFile(d)
+		if err != nil {
+			log.Println("Error reading cached file:", err)
+			return nil
+		}
+		return content
+	}
+	return nil
+}
+
+func writeCachedFile(f, c string) {
+	cacheFile, err := os.Create(f)
 	if err != nil {
 		fmt.Println("Error creating file:", err)
-		return nil
+		return
 	}
 	defer cacheFile.Close()
 
-	_, err = cacheFile.WriteString(string(doiObject))
+	_, err = cacheFile.WriteString(c)
 	if err != nil {
-		fmt.Println("Error caching DOI JSON:", err)
+		log.Println("Error caching DOI JSON:", err)
 	}
-
-	return doiObject
 }
