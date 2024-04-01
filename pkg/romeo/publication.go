@@ -6,9 +6,45 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/lehigh-university-libraries/papercut/internal/utils"
 )
 
+type Response struct {
+	Publications []Publication `json:"items"`
+}
+
 type Publication struct {
+	PublisherPolicies []PublisherPolicy `json:"publisher_policy"`
+}
+
+type PublisherPolicy struct {
+	Uri                  string       `json:"uri"`
+	OpenAccessProhibited string       `json:"open_access_prohibited"`
+	PermittedOa          []OpenAccess `json:"permitted_oa"`
+}
+
+type OpenAccess struct {
+	ArticleVersion []string  `json:"article_version"`
+	Conditions     []string  `json:"conditions"`
+	Embargo        Embargo   `json:"embargo,omitempty"`
+	License        []License `json:"license,omitempty"`
+	Location       Location  `json:"location"`
+	AdditonalFee   string    `json:"additional_oa_fee"`
+}
+
+type Location struct {
+	Locations []string `json:"location"`
+}
+
+type Embargo struct {
+	Amount int    `json:"amount,omitempty"`
+	Units  string `json:"units,omitempty"`
+}
+
+type License struct {
+	Value   string `json:"license"`
+	Version string `json:"version"`
 }
 
 func GetIdFromIssn(i string) string {
@@ -73,4 +109,50 @@ func GetPublication(url string) []byte {
 	}
 
 	return body
+}
+
+func (r *Response) GetLicense() string {
+	license := ""
+	for _, p := range r.Publications {
+		for _, policy := range p.PublisherPolicies {
+			license = policy.Uri
+			for _, oa := range policy.PermittedOa {
+				if utils.StrInSlice("published", oa.ArticleVersion) {
+					if !utils.StrInSlice("any_website", oa.Location.Locations) && !utils.StrInSlice("non_commercial_website", oa.Location.Locations) && !utils.StrInSlice("institutional_repository", oa.Location.Locations) && !utils.StrInSlice("non_commercial_repository", oa.Location.Locations) {
+						continue
+					}
+
+					if oa.Embargo.Amount == 0 {
+						for _, l := range oa.License {
+							uri := l.Uri()
+							if uri != "" {
+								return uri
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return license
+}
+
+func (l License) Uri() string {
+	c := strings.Split(l.Value, "_")
+	if c[0] == "cc" {
+
+		if l.Version == "" {
+			l.Version = "4.0"
+		}
+		uri := strings.Join(c[1:], "-")
+		if uri == "public-domain" {
+			uri = "publicdomain/"
+		} else {
+			uri = fmt.Sprintf("licenses/%s/%s/", uri, l.Version)
+		}
+		return fmt.Sprintf("https://creativecommons.org/%s", uri)
+	}
+
+	return ""
 }

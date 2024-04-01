@@ -92,6 +92,7 @@ var (
 				identifiers := []string{
 					fmt.Sprintf(`{"attr0":"doi","value":"%s"}`, doiObject.DOI),
 				}
+				fieldRights := ""
 				for _, i := range doiObject.ISSN {
 					identifiers = append(identifiers, fmt.Sprintf(`{"attr0":"issn","value":"%s"}`, i))
 					d, err = utils.MkTmpDir("issns")
@@ -108,6 +109,7 @@ var (
 						}
 					}
 					if id == "" {
+						log.Println("Could not find publication ID for ISSN", i)
 						continue
 					}
 					filter := fmt.Sprintf("[[\"id\",\"equals\",\"%s\"]]", id)
@@ -115,16 +117,27 @@ var (
 					d, _ = utils.MkTmpDir(filepath.Join("issns", "ids"))
 					d = filepath.Join(d, id)
 					publication := checkCachedFile(d)
-					if publicationId == nil {
+					if publication == nil {
 						publication = romeo.GetPublication(romeUrl)
 						if publication != nil {
 							writeCachedFile(d, string(publication))
 						}
 					}
 					if publication == nil {
+						log.Println("Could not find publication info for", i)
+						continue
+					}
+					var r romeo.Response
+					err = json.Unmarshal(publication, &r)
+					if err != nil {
+						log.Printf("Unable to read publication: %v", err)
 						continue
 					}
 
+					fieldRights = r.GetLicense()
+					if fieldRights != "" {
+						break
+					}
 				}
 
 				partDetail := []string{}
@@ -160,7 +173,6 @@ var (
 					var pdfURLs []string
 					for _, match := range matches {
 						if len(match) >= 2 {
-							log.Println(string(match[1]))
 							pdfURLs = append(pdfURLs, string(match[1]))
 						}
 					}
@@ -178,7 +190,7 @@ var (
 					if err != nil {
 						err = os.Remove(pdf)
 						if err != nil {
-							log.Println("Error deleting file:", err)
+							//log.Println("Error deleting file:", err)
 						}
 						pdf = pdfUrl
 					}
@@ -201,7 +213,7 @@ var (
 					strings.Join(relatedItem, "|"),
 					extent,
 					doiObject.Language,
-					"",
+					fieldRights,
 					strings.Join(doiObject.Subject, "|"),
 					pdf,
 				})

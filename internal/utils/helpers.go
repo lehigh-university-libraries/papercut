@@ -120,3 +120,12 @@ func DownloadPdf(url, filePath string) error {
 
 	return nil
 }
+
+func StrInSlice(s string, sl []string) bool {
+	for _, a := range sl {
+		if a == s {
+			return true
+		}
+	}
+	return false
+}
