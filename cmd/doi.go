@@ -190,7 +190,7 @@ var (
 					if err != nil {
 						err = os.Remove(pdf)
 						if err != nil {
-							//log.Println("Error deleting file:", err)
+							log.Println("Error deleting file:", err)
 						}
 						pdf = pdfUrl
 					}
