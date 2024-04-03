@@ -71,8 +71,9 @@ var (
 				for _, author := range doiObject.Authors {
 					linkedAgent = append(linkedAgent, fmt.Sprintf("relators:aut:person:%s, %s", author.Family, author.Given))
 				}
+				var publisher []string
 				if doiObject.Publisher != "" {
-					linkedAgent = append(linkedAgent, fmt.Sprintf("relators:pbl:corporate_body:%s", doiObject.Publisher))
+					publisher = append(publisher, fmt.Sprintf("relators:pbl:corporate_body:%s", doiObject.Publisher))
 				}
 				identifiers := []string{
 					fmt.Sprintf(`{"attr0":"doi","value":"%s"}`, doiObject.DOI),
@@ -119,6 +120,7 @@ var (
 					doiObject.Abstract,
 					"Digital Document",
 					strings.Join(linkedAgent, "|"),
+					strings.Join(publisher, "|"),
 					strings.Join(identifiers, "|"),
 					strings.Join(partDetail, "|"),
 					strings.Join(relatedItem, "|"),

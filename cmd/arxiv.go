@@ -85,6 +85,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 				"field_full_title",
 				"field_abstract",
 				"field_linked_agent",
+				"field_publisher",
 				"field_identifier",
 				"field_related_item",
 				"field_rights",
@@ -135,8 +136,10 @@ Thank you to arXiv for use of its open access interoperability.`,
 							log.Fatal(e.ID)
 						}
 
-						log.Println("Fetching", matches[1])
-						url := fmt.Sprintf("https://export.arxiv.org/oai2?verb=GetRecord&identifier=oai:arXiv.org:%s&metadataPrefix=arXiv", matches[1])
+						e.ID = matches[1]
+
+						log.Println("Fetching", e.ID)
+						url := fmt.Sprintf("https://export.arxiv.org/oai2?verb=GetRecord&identifier=oai:arXiv.org:%s&metadataPrefix=arXiv", e.ID)
 						oai := arxiv.GetOaiRecord(url)
 						if e.JournalRef != "" {
 							e.JournalRef = fmt.Sprintf(`{"title": "%s"}`, e.JournalRef)
@@ -186,6 +189,7 @@ Thank you to arXiv for use of its open access interoperability.`,
 							e.Title,
 							e.Summary,
 							oai["field_linked_agent"],
+							"arXiv",
 							strings.Join(identifiers, "|"),
 							e.JournalRef,
 							oai["field_rights"],

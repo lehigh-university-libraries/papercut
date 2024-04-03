@@ -52,7 +52,7 @@ func TestGetOaiRecord(t *testing.T) {
 	// Verify the result
 	expected := map[string]string{
 		"field_rights":       "https://test-license.com",
-		"field_linked_agent": "Author1LastName, Author1FirstName|Author2LastName, Author2FirstName",
+		"field_linked_agent": "relators:cre:person:Author1LastName, Author1FirstName|relators:cre:person:Author2LastName, Author2FirstName",
 	}
 	for key, value := range expected {
 		if result[key] != value {

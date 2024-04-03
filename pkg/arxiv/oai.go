@@ -67,7 +67,7 @@ func ParseOaiResponse(body []byte) map[string]string {
 
 	var authors []string
 	for _, author := range oaiResponse.Record.Authors.Authors {
-		authors = append(authors, fmt.Sprintf("%s, %s", author.KeyName, author.ForeName))
+		authors = append(authors, fmt.Sprintf("relators:cre:person:%s, %s", author.KeyName, author.ForeName))
 	}
 	values["field_linked_agent"] = strings.Join(authors, "|")
 
