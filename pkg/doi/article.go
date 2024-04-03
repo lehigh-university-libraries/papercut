@@ -1,12 +1,14 @@
 package doi
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lehigh-university-libraries/papercut/internal/utils"
 )
 
 type Affiliation struct {
@@ -89,38 +91,23 @@ type Article struct {
 	//	Relation            interface{}   `json:"relation"`
 }
 
-func GetObject(url, acceptContentType string) ([]byte, error) {
-	client := &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-		},
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
+func GetDoi(d, url string) (Article, error) {
+	var a Article
+	var err error
+	dirPath := filepath.Join("dois", d)
+	dirPath, err = utils.MkTmpDir(dirPath)
 	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return nil, err
+		return Article{}, fmt.Errorf("Unable to create cached file directory: %v", err)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", acceptContentType)
-
-	resp, err := client.Do(req)
+	dir := filepath.Join(dirPath, "doi.json")
+	u := fmt.Sprintf("%/%", url, d)
+	result := utils.GetResult(dir, u, "application/json")
+	err = json.Unmarshal(result, &a)
 	if err != nil {
-		return nil, err
+		return Article{}, fmt.Errorf("Could not unmarshal JSON for %s: %v", d, err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode > 299 {
-		return nil, fmt.Errorf("%s returned a non-200 status code: %d", url, resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
+	return a, nil
 }
 
 func JoinDate(d DateParts) string {

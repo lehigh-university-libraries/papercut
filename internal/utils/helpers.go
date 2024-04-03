@@ -128,3 +128,85 @@ func StrInSlice(s string, sl []string) bool {
 	}
 	return false
 }
+
+func GetResult(d, url, acceptContentType string) []byte {
+	var err error
+	content := CheckCachedFile(d)
+	if content != nil {
+		return content
+	}
+
+	log.Printf("Accessing %s\n", url)
+
+	r, err := getResult(url, acceptContentType)
+	if err != nil {
+		log.Fatal(err)
+	}
+	WriteCachedFile(d, string(r))
+
+	return r
+}
+
+func CheckCachedFile(d string) []byte {
+	// see if we can just get the cached file
+	if _, err := os.Stat(d); err == nil {
+		content, err := os.ReadFile(d)
+		if err != nil {
+			log.Println("Error reading cached file:", err)
+			return nil
+		}
+		return content
+	}
+	return nil
+}
+
+func WriteCachedFile(f, c string) {
+	cacheFile, err := os.Create(f)
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer cacheFile.Close()
+
+	_, err = cacheFile.WriteString(c)
+	if err != nil {
+		log.Println("Error caching DOI JSON:", err)
+	}
+}
+
+func getResult(url, acceptContentType string) ([]byte, error) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		},
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", acceptContentType)
+	req.Header.Set("Accept-Language", "en-US")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Cache-Control", "no-cache")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode > 299 {
+		return nil, fmt.Errorf("%s returned a non-200 status code: %d", url, resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}

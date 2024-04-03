@@ -1,10 +1,14 @@
 package romeo
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	neturl "net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/lehigh-university-libraries/papercut/internal/utils"
@@ -48,6 +52,17 @@ type License struct {
 }
 
 func GetIdFromIssn(i string) string {
+	d, err := utils.MkTmpDir("issns")
+	if err != nil {
+		return ""
+	}
+	d = filepath.Join(d, i)
+	publicationId := utils.CheckCachedFile(d)
+	id := string(publicationId)
+	if publicationId != nil {
+		return id
+	}
+
 	url := fmt.Sprintf("https://v2.sherpa.ac.uk//cgi/romeosearch?publication_title-auto=%s", i)
 	// Create a custom HTTP client with redirection disabled
 	client := &http.Client{
@@ -65,9 +80,10 @@ func GetIdFromIssn(i string) string {
 	// Check if the response status code is 301 (Moved Permanently)
 	if resp.StatusCode == http.StatusFound {
 		location := strings.Split(resp.Header.Get("Location"), "/")
-		return location[len(location)-1]
+		id = location[len(location)-1]
+		utils.WriteCachedFile(d, id)
+		return id
 	}
-	log.Println(resp.StatusCode)
 
 	return ""
 }
@@ -155,4 +171,42 @@ func (l License) Uri() string {
 	}
 
 	return ""
+}
+
+func FindIssnLicense(i string) string {
+	id := GetIdFromIssn(i)
+	if id == "" {
+		log.Println("Could not find publication ID for ISSN", i)
+		return ""
+	}
+
+	filter := fmt.Sprintf("[[\"id\",\"equals\",\"%s\"]]", id)
+	romeoApiKey := os.Getenv("SHERPA_ROMEO_API_KEY")
+	if romeoApiKey == "" {
+		log.Fatal("The SHERPA_ROMEO_API_KEY environment variable was not found.")
+	}
+
+	romeUrl := fmt.Sprintf("https://v2.sherpa.ac.uk/cgi/retrieve?item-type=publication&format=Json&limit=10&offset=0&order=-id&filter=%s&api-key=%s", neturl.QueryEscape(filter), romeoApiKey)
+	d, _ := utils.MkTmpDir(filepath.Join("issns", "ids"))
+	d = filepath.Join(d, id)
+	publication := utils.CheckCachedFile(d)
+	if publication == nil {
+		publication = GetPublication(romeUrl)
+		if publication != nil {
+			utils.WriteCachedFile(d, string(publication))
+		}
+	}
+	if publication == nil {
+		log.Println("Could not find publication info for", i)
+		return ""
+	}
+
+	var r Response
+	err := json.Unmarshal(publication, &r)
+	if err != nil {
+		log.Printf("Unable to read publication: %v", err)
+		return ""
+	}
+
+	return r.GetLicense()
 }

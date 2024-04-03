@@ -2,19 +2,15 @@ package cmd
 
 import (
 	"bufio"
-	"crypto/md5"
 	"encoding/csv"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/lehigh-university-libraries/papercut/internal/utils"
 	"github.com/lehigh-university-libraries/papercut/pkg/doi"
+	"github.com/lehigh-university-libraries/papercut/pkg/romeo"
 	"github.com/spf13/cobra"
 )
 
@@ -64,19 +60,10 @@ var (
 			}
 			for scanner.Scan() {
 				var doiObject doi.Article
-				line := strings.TrimSpace(scanner.Text())
-				dirPath := filepath.Join("dois", line)
-				dirPath, err = utils.MkTmpDir(dirPath)
+				doiStr := strings.TrimSpace(scanner.Text())
+				doiObject, err := doi.GetDoi(doiStr, url)
 				if err != nil {
-					log.Printf("Unable to create cached file directory: %v", err)
-					continue
-				}
-
-				d := filepath.Join(dirPath, "doi.json")
-				result := getResult(d, url, line, "application/json")
-				err = json.Unmarshal(result, &doiObject)
-				if err != nil {
-					log.Printf("Could not unmarshal JSON for %s: %v", line, err)
+					log.Println(err)
 					continue
 				}
 
@@ -93,6 +80,9 @@ var (
 				fieldRights := ""
 				for _, i := range doiObject.ISSN {
 					identifiers = append(identifiers, fmt.Sprintf(`{"attr0":"issn","value":"%s"}`, i))
+					if fieldRights == "" {
+						fieldRights = romeo.FindIssnLicense(i)
+					}
 				}
 
 				partDetail := []string{}
@@ -112,45 +102,9 @@ var (
 					extent = fmt.Sprintf(`{"attr0": "page", "number": "%s"}`, doiObject.Page)
 				}
 
-				pdfUrl := ""
 				pdf := ""
-				for _, l := range doiObject.Link {
-					if l.ContentType == "application/pdf" || strings.Contains(strings.ToLower(l.URL), "pdf") {
-						pdfUrl = l.URL
-					}
-				}
 				if downloadPdfs {
-					if pdfUrl == "" {
-						d = filepath.Join(dirPath, "doi.html")
-						result = getResult(d, url, line, "text/html")
-						pattern := `<meta name="citation_pdf_url" content="([^"]+)".*>`
-						re := regexp.MustCompile(pattern)
-						matches := re.FindAllSubmatch(result, -1)
-						var pdfURLs []string
-						for _, match := range matches {
-							if len(match) >= 2 {
-								pdfURLs = append(pdfURLs, string(match[1]))
-							}
-						}
-						for _, url := range pdfURLs {
-							pdfUrl = url
-							break
-						}
-					}
-					if pdfUrl != "" {
-						hash := md5.Sum([]byte(line))
-						hashStr := hex.EncodeToString(hash[:])
-
-						pdf = fmt.Sprintf("papers/dois/%s.pdf", hashStr)
-						err = utils.DownloadPdf(pdfUrl, pdf)
-						if err != nil {
-							err = os.Remove(pdf)
-							if err != nil {
-								log.Println("Error deleting file:", err)
-							}
-							pdf = pdfUrl
-						}
-					}
+					pdf = doiObject.DownloadPdf()
 				}
 
 				fullTitle := ""
@@ -158,7 +112,7 @@ var (
 					fullTitle = doiObject.Title
 				}
 				err = wr.Write([]string{
-					line,
+					doiStr,
 					doi.JoinDate(doiObject.Issued),
 					utils.TrimToMaxLen(doiObject.Title, 255),
 					fullTitle,
