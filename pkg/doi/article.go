@@ -97,15 +97,19 @@ func GetDoi(d, url string) (Article, error) {
 	dirPath := filepath.Join("dois", d)
 	dirPath, err = utils.MkTmpDir(dirPath)
 	if err != nil {
-		return Article{}, fmt.Errorf("Unable to create cached file directory: %v", err)
+		return Article{}, fmt.Errorf("unable to create cached file directory: %v", err)
 	}
 
 	dir := filepath.Join(dirPath, "doi.json")
-	u := fmt.Sprintf("%/%", url, d)
+	u := fmt.Sprintf("%s/%s", url, d)
 	result := utils.GetResult(dir, u, "application/json")
+	if result == nil {
+		return Article{}, fmt.Errorf("could not find DOI %s", d)
+	}
+
 	err = json.Unmarshal(result, &a)
 	if err != nil {
-		return Article{}, fmt.Errorf("Could not unmarshal JSON for %s: %v", d, err)
+		return Article{}, fmt.Errorf("could not unmarshal JSON for %s: %v", d, err)
 	}
 	return a, nil
 }

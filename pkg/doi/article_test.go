@@ -95,14 +95,7 @@ func TestGetObject(t *testing.T) {
 
 	// Mock server to simulate HTTP responses
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/test1" {
-			w.Header().Set("Content-Type", "text/plain")
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("Test response 1"))
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else if r.URL.Path == "/test2" {
+		if r.URL.Path == "/doi2" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 
@@ -119,26 +112,27 @@ func TestGetObject(t *testing.T) {
 
 	tests := []struct {
 		url               string
+		doi               string
 		acceptContentType string
 		want              []byte
 		wantErr           bool
 	}{
-		// Test case for plain text response
-		{url: ts.URL + "/test1", acceptContentType: "text/plain", want: []byte("Test response 1"), wantErr: false},
-		// Test case for JSON response
-		{url: ts.URL + "/test2", acceptContentType: "application/json", want: articleJSON, wantErr: false},
+		{url: ts.URL, doi: "doi2", acceptContentType: "application/json", want: articleJSON, wantErr: false},
 		// Test case for non-existent URL
-		{url: ts.URL + "/notfound", acceptContentType: "text/plain", want: nil, wantErr: true},
+		{url: ts.URL, doi: "notfound", acceptContentType: "text/plain", want: nil, wantErr: true},
 	}
 
 	for _, test := range tests {
-		got, err := GetObject(test.url, test.acceptContentType)
+		got, err := GetDoi(test.doi, test.url)
 		if (err != nil) != test.wantErr {
-			t.Errorf("GetObject(%s, %s) error = %v, wantErr %v", test.url, test.acceptContentType, err, test.wantErr)
+			t.Errorf("GetDoi(%s, %s) error = %v, wantErr %v", test.url, test.acceptContentType, err, test.wantErr)
 			continue
 		}
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("GetObject(%s, %s) = %v, want %v", test.url, test.acceptContentType, got, test.want)
+		if err == nil {
+			gotByte, err := json.Marshal(got)
+			if err != nil || !reflect.DeepEqual(gotByte, test.want) {
+				t.Errorf("GetDoi(%s, %s) = %v, want %v", test.url, test.acceptContentType, got, test.want)
+			}
 		}
 	}
 }

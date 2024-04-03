@@ -140,7 +140,8 @@ func GetResult(d, url, acceptContentType string) []byte {
 
 	r, err := getResult(url, acceptContentType)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Failed to get %s: %v", url, err)
+		return nil
 	}
 	WriteCachedFile(d, string(r))
 
