@@ -2,27 +2,23 @@ package cmd
 
 import (
 	"bufio"
-	"crypto/md5"
 	"encoding/csv"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/lehigh-university-libraries/papercut/internal/utils"
 	"github.com/lehigh-university-libraries/papercut/pkg/doi"
+	"github.com/lehigh-university-libraries/papercut/pkg/romeo"
 	"github.com/spf13/cobra"
 )
 
 var (
 	// used for flags.
-	filePath string
-
-	doiCmd = &cobra.Command{
+	filePath     string
+	downloadPdfs bool
+	doiCmd       = &cobra.Command{
 		Use:   "doi",
 		Short: "Get DOI metadata and PDF",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -64,19 +60,10 @@ var (
 			}
 			for scanner.Scan() {
 				var doiObject doi.Article
-				line := strings.TrimSpace(scanner.Text())
-				dirPath := filepath.Join("dois", line)
-				dirPath, err = utils.MkTmpDir(dirPath)
+				doiStr := strings.TrimSpace(scanner.Text())
+				doiObject, err := doi.GetDoi(doiStr, url)
 				if err != nil {
-					log.Printf("Unable to create cached file directory: %v", err)
-					continue
-				}
-
-				d := filepath.Join(dirPath, "doi.json")
-				result := getResult(d, url, line, "application/json")
-				err = json.Unmarshal(result, &doiObject)
-				if err != nil {
-					log.Printf("Could not unmarshal JSON for %s: %v", line, err)
+					log.Println(err)
 					continue
 				}
 
@@ -90,8 +77,12 @@ var (
 				identifiers := []string{
 					fmt.Sprintf(`{"attr0":"doi","value":"%s"}`, doiObject.DOI),
 				}
+				fieldRights := ""
 				for _, i := range doiObject.ISSN {
 					identifiers = append(identifiers, fmt.Sprintf(`{"attr0":"issn","value":"%s"}`, i))
+					if fieldRights == "" {
+						fieldRights = romeo.FindIssnLicense(i)
+					}
 				}
 
 				partDetail := []string{}
@@ -111,45 +102,9 @@ var (
 					extent = fmt.Sprintf(`{"attr0": "page", "number": "%s"}`, doiObject.Page)
 				}
 
-				pdfUrl := ""
 				pdf := ""
-				for _, l := range doiObject.Link {
-					if l.ContentType == "application/pdf" || strings.Contains(strings.ToLower(l.URL), "pdf") {
-						pdfUrl = l.URL
-
-					}
-				}
-				if pdfUrl == "" {
-					d = filepath.Join(dirPath, "doi.html")
-					result = getResult(d, url, line, "text/html")
-					pattern := `<meta name="citation_pdf_url" content="([^"]+)".*>`
-					re := regexp.MustCompile(pattern)
-					matches := re.FindAllSubmatch(result, -1)
-					var pdfURLs []string
-					for _, match := range matches {
-						if len(match) >= 2 {
-							log.Println(string(match[1]))
-							pdfURLs = append(pdfURLs, string(match[1]))
-						}
-					}
-					for _, url := range pdfURLs {
-						pdfUrl = url
-						break
-					}
-				}
-				if pdfUrl != "" {
-					hash := md5.Sum([]byte(line))
-					hashStr := hex.EncodeToString(hash[:])
-
-					pdf = fmt.Sprintf("papers/dois/%s.pdf", hashStr)
-					err = utils.DownloadPdf(pdfUrl, pdf)
-					if err != nil {
-						err = os.Remove(pdf)
-						if err != nil {
-							log.Println("Error deleting file:", err)
-						}
-						pdf = pdfUrl
-					}
+				if downloadPdfs {
+					pdf = doiObject.DownloadPdf()
 				}
 
 				fullTitle := ""
@@ -157,7 +112,7 @@ var (
 					fullTitle = doiObject.Title
 				}
 				err = wr.Write([]string{
-					line,
+					doiStr,
 					doi.JoinDate(doiObject.Issued),
 					utils.TrimToMaxLen(doiObject.Title, 255),
 					fullTitle,
@@ -169,7 +124,7 @@ var (
 					strings.Join(relatedItem, "|"),
 					extent,
 					doiObject.Language,
-					"",
+					fieldRights,
 					strings.Join(doiObject.Subject, "|"),
 					pdf,
 				})
@@ -192,45 +147,5 @@ func init() {
 
 	doiCmd.Flags().StringP("url", "u", "https://dx.doi.org", "The DOI API url")
 	doiCmd.Flags().StringVarP(&filePath, "file", "f", "", "path to file containing one DOI per line")
-}
-
-func getResult(d, url, line, acceptContentType string) []byte {
-	var err error
-
-	// see if we can just get the cached file
-	if _, err := os.Stat(d); err == nil {
-		content, err := os.ReadFile(d)
-		if err != nil {
-			fmt.Println("Error reading cached file:", err)
-		} else {
-			var a doi.Affiliation
-			err = json.Unmarshal(content, &a)
-			if err == nil || acceptContentType == "text/html" {
-				return content
-			}
-			log.Println("Error unmarshalling cached file:", err)
-		}
-	}
-
-	apiURL := fmt.Sprintf("%s/%s", url, line)
-
-	log.Printf("Accessing %s\n", apiURL)
-
-	doiObject, err := doi.GetObject(apiURL, acceptContentType)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cacheFile, err := os.Create(d)
-	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return nil
-	}
-	defer cacheFile.Close()
-
-	_, err = cacheFile.WriteString(string(doiObject))
-	if err != nil {
-		fmt.Println("Error caching DOI JSON:", err)
-	}
-
-	return doiObject
+	doiCmd.Flags().BoolVarP(&downloadPdfs, "download-pdfs", "d", true, "whether to download the PDFs")
 }

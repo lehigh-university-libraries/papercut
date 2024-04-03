@@ -122,3 +122,27 @@ func TestTrimToMaxLen(t *testing.T) {
 		t.Errorf("TrimToMaxLen(%q, 20) = %q; want %q", inputExact, resultExact, expectedExact)
 	}
 }
+
+func TestStrInSlice(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		sl       []string
+		expected bool
+	}{
+		{"StringInSlice", "hello", []string{"hello", "world", "foo", "bar"}, true},
+		{"StringNotInSlice", "goodbye", []string{"hello", "world", "foo", "bar"}, false},
+		{"EmptySlice", "foo", []string{}, false},
+		{"EmptyString", "", []string{"hello", "world", "foo", "bar"}, false},
+		{"StringInSliceMultipleTimes", "foo", []string{"hello", "world", "foo", "bar", "foo"}, true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := StrInSlice(test.s, test.sl)
+			if result != test.expected {
+				t.Errorf("Expected StrInSlice(%q, %v) to be %v, but got %v", test.s, test.sl, test.expected, result)
+			}
+		})
+	}
+}
