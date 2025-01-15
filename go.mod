@@ -1,6 +1,6 @@
 module github.com/lehigh-university-libraries/papercut
 
-go 1.20
+go 1.23.4
 
 require github.com/spf13/cobra v1.7.0
 

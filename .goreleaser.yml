@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go mod tidy
@@ -36,11 +37,10 @@ changelog:
       - '^test:'
 brews:
   - name: papercut
-    homepage: "https://github.com/lehigh-university-libraries/homebrew-papercut"
-    tap:
-      owner: lehigh-university-libraries
-      name: homebrew-papercut
+    homepage: "https://github.com/lehigh-university-libraries/papercut"
     commit_author:
       name: joecorall
       email: jjc223@lehigh.edu
-
+    repository:
+      owner: lehigh-university-libraries
+      name: homebrew

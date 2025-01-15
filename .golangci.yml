@@ -1,4 +1,6 @@
 linters:
   enable:
     - gofmt
-
+issues:
+  exclude-dirs:
+    - ../../go
