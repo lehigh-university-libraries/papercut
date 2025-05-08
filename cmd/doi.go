@@ -49,7 +49,6 @@ var (
 				"field_identifier",
 				"field_part_detail",
 				"field_related_item",
-				"field_extent",
 				"field_language",
 				"field_rights",
 				"field_subject",
@@ -91,7 +90,7 @@ var (
 					partDetail = append(partDetail, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Volume))
 				}
 				if doiObject.Issue != "" {
-					partDetail = append(partDetail, fmt.Sprintf(`{"type": "volume", "number": "%s"}`, doiObject.Issue))
+					partDetail = append(partDetail, fmt.Sprintf(`{"type": "issue", "number": "%s"}`, doiObject.Issue))
 				}
 
 				relatedItem := []string{}
@@ -100,7 +99,7 @@ var (
 				}
 				extent := ""
 				if doiObject.Page != "" {
-					extent = fmt.Sprintf(`{"attr0": "page", "number": "%s"}`, doiObject.Page)
+					partDetail = append(partDetail, fmt.Sprintf(`{"type": "page", "number": "%s"}`, doiObject.Page))
 				}
 
 				pdf := ""
@@ -124,7 +123,6 @@ var (
 					strings.Join(identifiers, "|"),
 					strings.Join(partDetail, "|"),
 					strings.Join(relatedItem, "|"),
-					extent,
 					doiObject.Language,
 					fieldRights,
 					strings.Join(doiObject.Subject, "|"),
